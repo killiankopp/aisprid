@@ -4,18 +4,20 @@ networks:
 
 services:
   kafka-broker:
-    image: apache/kafka:latest
+    image: bitnami/kafka:latest
     container_name: kafka-broker
     environment:
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_NODE_ID: 1
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker:9092
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-broker:9093
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=TRACE,kafka.request.logger=DEBUG"
-      KAFKA_LOG4J_ROOT_LOGLEVEL: DEBUG
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker:9092
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka-broker:9093
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=TRACE,kafka.request.logger=DEBUG"
+      KAFKA_CFG_LOG_LEVEL: DEBUG
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_CFG_ENABLE_KRAFT: 'yes'
+      KAFKA_KRAFT_CLUSTER_ID: '5L6g3nShT-eMCtK--X86sw'
     ports:
       - "3980:9092"
     networks:
@@ -71,4 +73,18 @@ services:
       PYTHONUNBUFFERED : 1
     networks:
       - aisprid
+    restart: unless-stopped
+  kafka-tools:
+    image: bitnami/kafka:latest
+    container_name: kafka-tools
+    entrypoint: ["sleep", "infinity"]
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: ""
+      KAFKA_CFG_BROKER_ID: 2
+      KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9094
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka-tools:9094
+    networks:
+      - aisprid
+    depends_on:
+      - kafka-broker
     restart: unless-stopped
