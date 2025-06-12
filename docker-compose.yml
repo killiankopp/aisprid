@@ -1,0 +1,74 @@
+networks:
+  aisprid:
+    driver: bridge
+
+services:
+  kafka-broker:
+    image: apache/kafka:latest
+    container_name: kafka-broker
+    environment:
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-broker:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=TRACE,kafka.request.logger=DEBUG"
+      KAFKA_LOG4J_ROOT_LOGLEVEL: DEBUG
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    ports:
+      - "3980:9092"
+    networks:
+      - aisprid
+    restart: unless-stopped
+  kafka-ui:
+      image: provectuslabs/kafka-ui
+      container_name: kafka-ui
+      ports:
+        - "3981:8080"
+      environment:
+        DYNAMIC_CONFIG_ENABLED: "true"
+      networks:
+        - aisprid
+      restart: unless-stopped
+  extract:
+    image: aisprid-extract:latest
+    container_name: extract
+    ports:
+      - "3982:8000"
+    networks:
+      - aisprid
+    restart: unless-stopped
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_DB: aisprid
+      POSTGRES_USER: aisprid_user
+      POSTGRES_PASSWORD: aisprid_pass
+    ports:
+      - "3983:5432"
+    networks:
+      - aisprid
+    restart: unless-stopped
+  load:
+    image: aisprid-load:latest
+    container_name: load
+    ports:
+      - "3984:8000"
+    networks:
+      - aisprid
+    restart: unless-stopped
+  loader:
+    image: aisprid-loader:latest
+    container_name: loader
+    environment:
+      KAFKA_BROKER : kafka-broker:9092
+      KAFKA_TOPIC: load
+      KAFKA_GROUP_ID: loader
+      DLQ_TOPIC: DLQ_load
+      LOAD_API_URL: http://load:8000/load/v1/
+      PYTHONUNBUFFERED : 1
+    networks:
+      - aisprid
+    restart: unless-stopped
