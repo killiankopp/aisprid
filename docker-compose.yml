@@ -74,17 +74,25 @@ services:
     networks:
       - aisprid
     restart: unless-stopped
-  kafka-tools:
-    image: bitnami/kafka:latest
-    container_name: kafka-tools
-    entrypoint: ["sleep", "infinity"]
-    environment:
-      KAFKA_CFG_ZOOKEEPER_CONNECT: ""
-      KAFKA_CFG_BROKER_ID: 2
-      KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9094
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka-tools:9094
+
+  transform:
+    image: aisprid-transform:latest
+    container_name: transform
+    ports:
+      - "3985:8000"
     networks:
       - aisprid
-    depends_on:
-      - kafka-broker
+    restart: unless-stopped
+  transformer:
+    image: aisprid-transformer:latest
+    container_name: transformer
+    environment:
+      KAFKA_BROKER : kafka-broker:9092
+      KAFKA_TOPIC: transform
+      KAFKA_GROUP_ID: transformer
+      DLQ_TOPIC: DLQ_transform
+      LOAD_API_URL: http://transform:8000/transform/v1/
+      PYTHONUNBUFFERED : 1
+    networks:
+      - aisprid
     restart: unless-stopped
