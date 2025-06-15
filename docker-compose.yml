@@ -23,6 +23,7 @@ services:
     networks:
       - aisprid
     restart: unless-stopped
+
   kafka-ui:
       image: provectuslabs/kafka-ui
       container_name: kafka-ui
@@ -33,6 +34,7 @@ services:
       networks:
         - aisprid
       restart: unless-stopped
+
   extract:
     image: aisprid-extract:latest
     container_name: extract
@@ -41,6 +43,7 @@ services:
     networks:
       - aisprid
     restart: unless-stopped
+
   postgres:
     image: postgres:15
     container_name: postgres
@@ -53,6 +56,7 @@ services:
     networks:
       - aisprid
     restart: unless-stopped
+
   load:
     image: aisprid-load:latest
     container_name: load
@@ -61,10 +65,12 @@ services:
     networks:
       - aisprid
     restart: unless-stopped
+
   loader:
-    image: aisprid-loader:latest
+    image: aisprid-worker:latest
     container_name: loader
     environment:
+      APP_NAME: loader
       KAFKA_BROKER : kafka-broker:9092
       KAFKA_TOPIC: load
       KAFKA_GROUP_ID: loader
@@ -83,16 +89,30 @@ services:
     networks:
       - aisprid
     restart: unless-stopped
+
   transformer:
-    image: aisprid-transformer:latest
+    image: aisprid-worker:latest
     container_name: transformer
     environment:
+      APP_NAME: transformer
       KAFKA_BROKER : kafka-broker:9092
       KAFKA_TOPIC: transform
       KAFKA_GROUP_ID: transformer
       DLQ_TOPIC: DLQ_transform
       LOAD_API_URL: http://transform:8000/transform/v1/
       PYTHONUNBUFFERED : 1
+    networks:
+      - aisprid
+    restart: unless-stopped
+
+  grafana-aisprid:
+    image: grafana/grafana-enterprise
+    container_name: grafana-aisprid
+    user: "${UID:-1000}"
+    ports:
+      - "3986:3000"
+    volumes:
+      - ./grafana-data:/var/lib/grafana
     networks:
       - aisprid
     restart: unless-stopped
